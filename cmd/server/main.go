@@ -37,6 +37,7 @@ func main() {
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
@@ -74,10 +75,10 @@ type Translation struct {
 
 // スライス（配列）（DBのテーブル代わりメモリ上に置くためサーバー停止後消える）
 var (
-	videos       = []Video{}       //動画情報テーブル
-	tramscropts  = []Transcript{}  //字幕情報テーブル
-	translations = []Translation{} //翻訳情報テーブル
-	mu           sync.Mutex        // 複数の処理が同時にデータを書き換えるのを防ぐためのロック
+	videos = []Video{} //動画情報テーブル
+	//tramscropts  = []Transcript{}  //字幕情報テーブル
+	//translations = []Translation{} //翻訳情報テーブル
+	mu sync.Mutex // 複数の処理が同時にデータを書き換えるのを防ぐためのロック
 )
 
 // main()関数を書く（エントリーポイント）
@@ -89,4 +90,32 @@ func main() {
 }
 
 // videosにアクセスされた時に処理
-func videosHandler(w http.ResponseWriter, r *http.Request)
+func videosHandler(w http.ResponseWriter, r *http.Request) {
+	//排他制御で複数の処理が同時に書き込まれないようにする
+	mu.Lock()
+	defer mu.Unlock()
+
+	switch r.Method {
+	//get動画情報取得
+	case http.MethodGet:
+		header := w.Header()
+		header.Set("Content-Type", "application/json") //返すデータがJSON形式宣言
+		encoder := json.NewEncoder(w)
+		err := encoder.Encode(videos) //videoスライスをJSONに変換
+		if err != nil {
+			// エラー発生したが無視（スルー）
+		}
+
+		//postリクエスト
+	case http.MethodPost:
+		var v Video
+		//json形式のリクエストボディをVideo構造体に変換
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&v)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		//
+	}
+}
