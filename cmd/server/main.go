@@ -1,18 +1,15 @@
-// エントリーポイント
-/*
-package main
-
-import "fmt"
-
-func main() {
-	fmt.Println("Helloworld")
-}
-*/
-
 /*
 package main
 
 import (
+
+
+
+
+
+
+
+
 	"github.com/gin-gonic/gin"
 	//"net/http"
 )
@@ -38,6 +35,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"net/http"
 	"sync"
 )
 
@@ -46,18 +45,18 @@ type Video struct {
 	ID         string `json:"id"`
 	YoutubeURL string `json:"youtube_url"`
 	AudioPath  string `json:"audio_path"`
-	Stutus     string `json:"stutus"`
+	Status     string `json:"status"`
 	CreatedAt  string `json:"created_at"`
-	UpdateAt   string `json:"update_at"`
+	UpdatedAt  string `json:"updated_at"`
 }
 
 // 字幕（文字起こし）の情報を表す構造体
 type Transcript struct {
-	ID           string `json:"id"`
-	VideoId      string `json:"video_id"`
-	Language     string `json:"langiage"`
-	TransriptSrt string `json:"transript_srt"`
-	CreatedAt    string `json:"created_at"`
+	ID            string `json:"id"`
+	VideoId       string `json:"video_id"`
+	Language      string `json:"language"`
+	TranscriptSrt string `json:"transcript_srt"`
+	CreatedAt     string `json:"created_at"`
 }
 
 // 翻訳済み字幕情報を表す構造体
@@ -65,7 +64,7 @@ type Translation struct {
 	ID            string `json:"id"`
 	TranscriptId  string `json:"transcript_id"`
 	SourceLang    string `json:"source_lang"`
-	TargetLang    string `json:"taget_lang"`
+	TargetLang    string `json:"target_lang"`
 	TranslatedSrt string `json:"translated_srt"`
 	ModelUsed     string `json:"model_used"`
 	CreatedAt     string `json:"created_at"`
@@ -89,27 +88,20 @@ func main() {
 		})
 	})
 
-	//動画取得
-	router.GET("/videos", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"massage": "動画取得できたぞ",
-		})
-	})
-	//字幕情報
-	router.GET("/Transcript", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"massage": "音声を文字お越ししたよ",
-		})
-	})
-	//翻訳情報
-	router.GET("/Translation", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"massage": "翻訳したよ",
-		})
-	})
+	//動画を取得
+	router.POST("/videos", func(c *gin.Context) {
+		v := Video{}
+		//インド(bind) ＝ データを「形のある箱（構造体）」に入れる
+		if err := c.BindJSON(&v); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid JSON"})
+			return
+		}
+		v.ID = uuid.New().String() //一意な識別子（ID）と、ユニークなIDを作る関数
+		v.Status = "processing"
+		videos = append(videos, v) //一時メモリ保存（DB代わり）
 
-	router.Run()
+		c.JSON(http.StatusOK, v)
+	})
+	router.Run(":8080")
 
 }
-
-//http://localhost:8080/ping
