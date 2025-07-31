@@ -37,17 +37,15 @@ func main() {
 package main
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
+	"github.com/gin-gonic/gin"
 	"sync"
 )
 
 // 動画の情報を表す構造体
 type Video struct {
 	ID         string `json:"id"`
-	YoutubeUrl string `json:"youtube_url"`
-	AudioPath  string `json:"audio_url"`
+	YoutubeURL string `json:"youtube_url"`
+	AudioPath  string `json:"audio_path"`
 	Stutus     string `json:"stutus"`
 	CreatedAt  string `json:"created_at"`
 	UpdateAt   string `json:"update_at"`
@@ -75,47 +73,43 @@ type Translation struct {
 
 // スライス（配列）（DBのテーブル代わりメモリ上に置くためサーバー停止後消える）
 var (
-	videos = []Video{} //動画情報テーブル
-	//tramscropts  = []Transcript{}  //字幕情報テーブル
-	//translations = []Translation{} //翻訳情報テーブル
-	mu sync.Mutex // 複数の処理が同時にデータを書き換えるのを防ぐためのロック
+	videos       = []Video{}       //動画情報テーブル
+	tramscropts  = []Transcript{}  //字幕情報テーブル
+	translations = []Translation{} //翻訳情報テーブル
+	mu           sync.Mutex        // 複数の処理が同時にデータを書き換えるのを防ぐためのロック
 )
 
-// main()関数を書く（エントリーポイント）
+// データを取得させる（GETメソッド）
 func main() {
-	http.HandleFunc("/videos", videosHandler)
-	log.Println("Server started at :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	router := gin.Default()
+	// 動作確認
+	router.GET("/ping", func(c *gin.Context) { //cはGinのコンテキストの無名関数
+		c.JSON(200, gin.H{ //gin.Hは、map[string]interface{}のエイリアス
+			"massage": "エンドポイント",
+		})
+	})
+
+	//動画取得
+	router.GET("/videos", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"massage": "動画取得できたぞ",
+		})
+	})
+	//字幕情報
+	router.GET("/Transcript", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"massage": "音声を文字お越ししたよ",
+		})
+	})
+	//翻訳情報
+	router.GET("/Translation", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"massage": "翻訳したよ",
+		})
+	})
+
+	router.Run()
 
 }
 
-// videosにアクセスされた時に処理
-func videosHandler(w http.ResponseWriter, r *http.Request) {
-	//排他制御で複数の処理が同時に書き込まれないようにする
-	mu.Lock()
-	defer mu.Unlock()
-
-	switch r.Method {
-	//get動画情報取得
-	case http.MethodGet:
-		header := w.Header()
-		header.Set("Content-Type", "application/json") //返すデータがJSON形式宣言
-		encoder := json.NewEncoder(w)
-		err := encoder.Encode(videos) //videoスライスをJSONに変換
-		if err != nil {
-			// エラー発生したが無視（スルー）
-		}
-
-		//postリクエスト
-	case http.MethodPost:
-		var v Video
-		//json形式のリクエストボディをVideo構造体に変換
-		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&v)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		//
-	}
-}
+//http://localhost:8080/ping
