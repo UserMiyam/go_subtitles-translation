@@ -20,6 +20,24 @@ import (
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	"github.com/gin-gonic/gin"
 	//"net/http"
 )
@@ -48,6 +66,7 @@ import (
 	"github.com/google/uuid"
 	"net/http"
 	"sync"
+	"time"
 )
 
 // 動画の情報を表す構造体
@@ -109,14 +128,22 @@ func main() {
 
 		v.ID = uuid.New().String() //一意な識別子（ID）と、ユニークなIDを作る関数
 		v.Status = "processing"
-		videos = append(videos, v) //一時メモリ保存（DB代わり）
+		v.CreatedAt = time.Now().Format(time.RFC3339) //作成日時
+		v.UpdatedAt = time.Now().Format(time.RFC3339) //更新日治
+
+		//動画情報スライス、構造体に追加
+		mu.Lock() //排他ロック
+		videos = append(videos, v)
+		defer mu.Unlock()
 
 		c.JSON(http.StatusOK, v)
 	})
 
 	//全動画を取得（GET）
 	router.GET("/videos", func(c *gin.Context) {
-		c.JSON(http.StatusOK, videos) //配列そのまま返す	videos
+		mu.Lock() //排他ロック
+		defer mu.Unlock()
+		c.JSON(http.StatusOK, videos) //配列そのままクライアント側へ返す	videos
 	})
 	router.Run(":8080")
 }
