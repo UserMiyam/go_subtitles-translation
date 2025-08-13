@@ -8,7 +8,7 @@ go run main.go
 Invoke-RestMethod -Uri "http://localhost:8080/videos" -Method Post -ContentType "application/json" -Body '{"youtube_url":"任意のURL"}'結果確認
 3.出力結果がJSONで抽出
 
-
+ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
 //動画を取得
 1️ POST で動画を追加
 powershell
