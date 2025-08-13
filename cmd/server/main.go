@@ -16,6 +16,10 @@ import (
 
 
 
+
+
+
+
 	"github.com/gin-gonic/gin"
 	//"net/http"
 )
@@ -102,6 +106,7 @@ func main() {
 			c.JSON(400, gin.H{"error": "Invalid JSON"})
 			return
 		}
+
 		v.ID = uuid.New().String() //一意な識別子（ID）と、ユニークなIDを作る関数
 		v.Status = "processing"
 		videos = append(videos, v) //一時メモリ保存（DB代わり）
@@ -111,9 +116,7 @@ func main() {
 
 	//全動画を取得（GET）
 	router.GET("/videos", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"Message": "動画を取得したよ",
-		})
+		c.JSON(http.StatusOK, videos) //配列そのまま返す	videos
 	})
 	router.Run(":8080")
 }
