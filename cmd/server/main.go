@@ -10,6 +10,12 @@ import (
 
 
 
+
+
+
+
+
+
 	"github.com/gin-gonic/gin"
 	//"net/http"
 )
@@ -81,10 +87,10 @@ var (
 // データを取得させる（GETメソッド）
 func main() {
 	router := gin.Default()
-	// 動作確認
+	// 動作確認テスト
 	router.GET("/ping", func(c *gin.Context) { //cはGinのコンテキストの無名関数
 		c.JSON(200, gin.H{ //gin.Hは、map[string]interface{}のエイリアス
-			"massage": "エンドポイント",
+			"Message": "エンドポイント",
 		})
 	})
 
@@ -102,6 +108,12 @@ func main() {
 
 		c.JSON(http.StatusOK, v)
 	})
-	router.Run(":8080")
 
+	//全動画を取得（GET）
+	router.GET("/videos", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"Message": "動画を取得したよ",
+		})
+	})
+	router.Run(":8080")
 }
