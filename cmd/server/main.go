@@ -1,42 +1,16 @@
-/*
 package main
 
 import (
-
-
-
-
-
-
-	"github.com/gin-gonic/gin"
-	//"net/http"
-)
-
-func main() {
-	//Ginエンジンのインスタンス作成
-	r := gin.Default()
-
-	//ルートURL（”/"）に対するGETリクエストのルート
-	r.GET("/", func(c *gin.Context) {
-		//JSONレスポンスを返す
-		c.JSON(200, gin.H{
-			"message": "hello world",
-		})
-	})
-	r.Run(":8080")
-}
-*/
-
-//http://localhost:8080/
-
-package main
-
-import (
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
 // 動画の情報を表す構造体
@@ -69,51 +43,66 @@ type Translation struct {
 	CreatedAt     string `json:"created_at"`
 }
 
-// スライス（配列）（DBのテーブル代わりメモリ上に置くためサーバー停止後消える）
+// メモリ上の疑似DB
 var (
-	videos       = []Video{}       //動画情報テーブル
-	tramscropts  = []Transcript{}  //字幕情報テーブル
-	translations = []Translation{} //翻訳情報テーブル
-	mu           sync.Mutex        // 複数の処理が同時にデータを書き換えるのを防ぐためのロック
+	videos       = []Video{}
+	tramscropts  = []Transcript{}
+	translations = []Translation{}
+	mu           sync.Mutex
 )
 
-// データを取得させる（GETメソッド）
 func main() {
+	// .env 読み込み
+	_ = godotenv.Load()
+
+	// 環境変数から CORS の許可オリジン取得
+	corsOrigin := os.Getenv("BFF_CORS_ORIGIN")
+	if corsOrigin == "" {
+		log.Fatal("環境変数 BFF_CORS_ORIGIN が設定されていません") // デフォルト値（開発用）
+	}
+
 	router := gin.Default()
-	// 動作確認テスト
-	router.GET("/ping", func(c *gin.Context) { //cはGinのコンテキストの無名関数
-		c.JSON(200, gin.H{ //gin.Hは、map[string]interface{}のエイリアス
-			"Message": "エンドポイント",
-		})
+
+	// CORS 設定
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{corsOrigin},
+		AllowMethods:     []string{"POST", "GET", "OPTIONS"},
+		AllowHeaders:     []string{"Access-Control-Allow-Credentials", "Access-Control-Allow-Headers", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           24 * time.Hour,
+	}))
+
+	// 動作確認
+	router.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"Message": "エンドポイント"})
 	})
 
-	//動画を取得
+	// 動画登録
 	router.POST("/videos", func(c *gin.Context) {
 		v := Video{}
-		//インド(bind) ＝ データを「形のある箱（構造体）」に入れる
 		if err := c.BindJSON(&v); err != nil {
-			c.JSON(400, gin.H{"error": "Invalid JSON"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 			return
 		}
 
-		v.ID = uuid.New().String() //一意な識別子（ID）と、ユニークなIDを作る関数
+		v.ID = uuid.New().String()
 		v.Status = "processing"
-		v.CreatedAt = time.Now().Format(time.RFC3339) //作成日時
-		v.UpdatedAt = time.Now().Format(time.RFC3339) //更新日治
+		v.CreatedAt = time.Now().Format(time.RFC3339)
+		v.UpdatedAt = time.Now().Format(time.RFC3339)
 
-		//動画情報スライス、構造体に追加
-		mu.Lock() //排他ロック
+		mu.Lock()
 		videos = append(videos, v)
-		defer mu.Unlock()
+		mu.Unlock()
 
 		c.JSON(http.StatusOK, v)
 	})
 
-	//全動画を取得（GET）
+	// 全動画取得
 	router.GET("/videos", func(c *gin.Context) {
-		mu.Lock() //排他ロック
+		mu.Lock()
 		defer mu.Unlock()
-		c.JSON(http.StatusOK, videos) //配列そのままクライアント側へ返す	videos
+		c.JSON(http.StatusOK, videos)
 	})
+
 	router.Run(":8080")
 }
