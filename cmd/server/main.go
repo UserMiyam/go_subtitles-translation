@@ -16,6 +16,7 @@ import (
 // 動画の情報を表す構造体
 type Video struct {
 	ID         string `json:"id"`
+	Title      string `json:"title"` // 追加: フロントエンドで使用
 	YoutubeURL string `json:"youtube_url"`
 	AudioPath  string `json:"audio_path"`
 	Status     string `json:"status"`
@@ -46,7 +47,7 @@ type Translation struct {
 // メモリ上の疑似DB
 var (
 	videos       = []Video{}
-	tramscropts  = []Transcript{}
+	transcripts  = []Transcript{} // 修正: tramscropts -> transcripts
 	translations = []Translation{}
 	mu           sync.Mutex
 )
@@ -58,14 +59,34 @@ func main() {
 	// 環境変数から CORS の許可オリジン取得
 	corsOrigin := os.Getenv("BFF_CORS_ORIGIN")
 	if corsOrigin == "" {
-		log.Fatal("環境変数 BFF_CORS_ORIGIN が設定されていません") // デフォルト値（開発用）
+		log.Println("環境変数 BFF_CORS_ORIGIN が設定されていないため、デフォルト値を使用します")
+	}
+
+	// 追加: テスト用のサンプルデータを作成
+	videos = []Video{
+		{
+			ID:         "1",
+			Title:      "サンプル動画1",
+			YoutubeURL: "https://www.youtube.com/watch?v=example1",
+			Status:     "completed",
+			CreatedAt:  time.Now().Format(time.RFC3339),
+			UpdatedAt:  time.Now().Format(time.RFC3339),
+		},
+		{
+			ID:         "2",
+			Title:      "サンプル動画2",
+			YoutubeURL: "https://www.youtube.com/watch?v=example2",
+			Status:     "processing",
+			CreatedAt:  time.Now().Format(time.RFC3339),
+			UpdatedAt:  time.Now().Format(time.RFC3339),
+		},
 	}
 
 	router := gin.Default()
 
 	// CORS 設定
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{corsOrigin},
+		AllowOrigins:     []string{"*"}, //スト用に一時的にAllowOriginsを*に変更
 		AllowMethods:     []string{"POST", "GET", "OPTIONS"},
 		AllowHeaders:     []string{"Access-Control-Allow-Credentials", "Access-Control-Allow-Headers", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization"},
 		AllowCredentials: true,

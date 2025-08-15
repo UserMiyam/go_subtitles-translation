@@ -41,3 +41,6 @@ Invoke-RestMethod `
 これで videos 配列に入っている全動画情報が JSON で返ります。
 
 PowerShell 上で一覧として確認できます。
+
+//npm start
+//go run main.go
