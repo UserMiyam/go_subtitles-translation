@@ -42,5 +42,5 @@ Invoke-RestMethod `
 
 PowerShell 上で一覧として確認できます。
 
-//npm start
+//npm run dev      
 //go run main.go
