@@ -62,31 +62,23 @@ func main() {
 		log.Println("環境変数 BFF_CORS_ORIGIN が設定されていないため、デフォルト値を使用します")
 	}
 
-	// 追加: テスト用のサンプルデータを作成
-	videos = []Video{
-		{
-			ID:         "1",
-			Title:      "サンプル動画1",
-			YoutubeURL: "https://www.youtube.com/watch?v=example1",
-			Status:     "completed",
-			CreatedAt:  time.Now().Format(time.RFC3339),
-			UpdatedAt:  time.Now().Format(time.RFC3339),
-		},
-		{
-			ID:         "2",
-			Title:      "サンプル動画2",
-			YoutubeURL: "https://www.youtube.com/watch?v=example2",
-			Status:     "processing",
-			CreatedAt:  time.Now().Format(time.RFC3339),
-			UpdatedAt:  time.Now().Format(time.RFC3339),
-		},
-	}
+	//追加: テスト用のサンプルデータを作成
+	// videos = []Video{
+	// 	{
+	// 		ID:         "1",
+	// 		Title:      "サンプル動画1",
+	// 		YoutubeURL: "https://www.youtube.com/watch?v=example1",
+	// 		Status:     "completed",
+	// 		CreatedAt:  time.Now().Format(time.RFC3339),
+	// 		UpdatedAt:  time.Now().Format(time.RFC3339),
+	// 	},
+	// }
 
 	router := gin.Default()
 
 	// CORS 設定
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, //スト用に一時的にAllowOriginsを*に変更
+		AllowOrigins:     []string{"*"}, //テスト用に一時的にAllowOriginsを*に変更
 		AllowMethods:     []string{"POST", "GET", "OPTIONS"},
 		AllowHeaders:     []string{"Access-Control-Allow-Credentials", "Access-Control-Allow-Headers", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization"},
 		AllowCredentials: true,
@@ -100,12 +92,19 @@ func main() {
 
 	// 動画登録
 	router.POST("/videos", func(c *gin.Context) {
+		log.Println("POST /videos - 動画登録リクエスト受信")
+		//構造体に自動変換 → 処理・保存・レスポンスc.BindJSON(&v)
 		v := Video{}
 		if err := c.BindJSON(&v); err != nil {
+			log.Printf("JSON解析エラー: %v", err) // 追加
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 			return
 		}
 
+		// 受け取ったデータをログ出力 (追加)
+		log.Printf("受信データ - Title: %s, URL: %s", v.Title, v.YoutubeURL)
+
+		// サーバー側で値を設定
 		v.ID = uuid.New().String()
 		v.Status = "processing"
 		v.CreatedAt = time.Now().Format(time.RFC3339)
@@ -115,6 +114,8 @@ func main() {
 		videos = append(videos, v)
 		mu.Unlock()
 
+		log.Printf("動画登録完了 - ID: %s", v.ID) // 追加
+		// レスポンス返却
 		c.JSON(http.StatusOK, v)
 	})
 
@@ -122,8 +123,10 @@ func main() {
 	router.GET("/videos", func(c *gin.Context) {
 		mu.Lock()
 		defer mu.Unlock()
+		log.Printf("GET /videos - 動画数: %d", len(videos)) // 追加
 		c.JSON(http.StatusOK, videos)
 	})
 
+	log.Println("サーバー起動: http://localhost:8080") // 追加
 	router.Run(":8080")
 }
